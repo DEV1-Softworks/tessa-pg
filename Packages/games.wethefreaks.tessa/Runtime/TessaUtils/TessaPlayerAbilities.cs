@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TessaPlayerAbilities : MonoBehaviour
+public class TessaPlayerAbilities : MonoBehaviour, IAbilityReceiver
 {
     [SerializeField] private List<string> abilities = new();
 
-    public bool Has(string id) => abilities.Contains(id);
+    public bool HasAbility(string id) => abilities.Contains(id);
 
-    public void Grant(string id)
+    public void GrantAbility(string id)
     {
         if (!abilities.Contains(id)) abilities.Add(id);
     }
