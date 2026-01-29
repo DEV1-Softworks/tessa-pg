@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TessaPlayerAbilities : MonoBehaviour, IAbilityReceiver
+public class SamplePlayerAbilities : MonoBehaviour, IAbilityReceiver
 {
     [SerializeField] private List<string> abilities = new();
 
