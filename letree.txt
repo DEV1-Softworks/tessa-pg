@@ -1,0 +1,79 @@
+.
+├── Assets
+│   ├── DefaultVolumeProfile.asset
+│   ├── DefaultVolumeProfile.asset.meta
+│   ├── InputSystem_Actions.inputactions
+│   ├── InputSystem_Actions.inputactions.meta
+│   ├── Scenes
+│   │   ├── SampleScene.unity
+│   │   └── SampleScene.unity.meta
+│   ├── Scenes.meta
+│   ├── Scripts
+│   │   ├── TessaEnums
+│   │   │   ├── Direction.cs
+│   │   │   ├── Direction.cs.meta
+│   │   │   ├── RoomType.cs
+│   │   │   └── RoomType.cs.meta
+│   │   ├── TessaEnums.meta
+│   │   ├── TessaMetroidvaniaGenerator.cs
+│   │   ├── TessaMetroidvaniaGenerator.cs.meta
+│   │   ├── TessaRoomInstance.cs
+│   │   ├── TessaRoomInstance.cs.meta
+│   │   ├── TessaRoomMarker.cs
+│   │   ├── TessaRoomMarker.cs.meta
+│   │   ├── TessaUtils
+│   │   │   ├── TessaAbilityGate2D.cs
+│   │   │   ├── TessaAbilityGate2D.cs.meta
+│   │   │   ├── TessaPlayerAbilities.cs
+│   │   │   └── TessaPlayerAbilities.cs.meta
+│   │   └── TessaUtils.meta
+│   ├── Scripts.meta
+│   ├── Settings
+│   │   ├── Lit2DSceneTemplate.scenetemplate
+│   │   ├── Lit2DSceneTemplate.scenetemplate.meta
+│   │   ├── Renderer2D.asset
+│   │   ├── Renderer2D.asset.meta
+│   │   ├── Scenes
+│   │   │   ├── URP2DSceneTemplate.unity
+│   │   │   └── URP2DSceneTemplate.unity.meta
+│   │   ├── Scenes.meta
+│   │   ├── UniversalRP.asset
+│   │   └── UniversalRP.asset.meta
+│   ├── Settings.meta
+│   ├── UniversalRenderPipelineGlobalSettings.asset
+│   └── UniversalRenderPipelineGlobalSettings.asset.meta
+├── letree.txt
+├── Packages
+│   ├── manifest.json
+│   └── packages-lock.json
+└── ProjectSettings
+    ├── AudioManager.asset
+    ├── ClusterInputManager.asset
+    ├── DynamicsManager.asset
+    ├── EditorBuildSettings.asset
+    ├── EditorSettings.asset
+    ├── GraphicsSettings.asset
+    ├── InputManager.asset
+    ├── MemorySettings.asset
+    ├── MultiplayerManager.asset
+    ├── NavMeshAreas.asset
+    ├── NetworkManager.asset
+    ├── PackageManagerSettings.asset
+    ├── Packages
+    │   └── com.unity.dedicated-server
+    │       └── MultiplayerRolesSettings.asset
+    ├── Physics2DSettings.asset
+    ├── PresetManager.asset
+    ├── ProjectSettings.asset
+    ├── ProjectVersion.txt
+    ├── QualitySettings.asset
+    ├── ShaderGraphSettings.asset
+    ├── TagManager.asset
+    ├── TimeManager.asset
+    ├── UnityConnectSettings.asset
+    ├── URPProjectSettings.asset
+    ├── VersionControlSettings.asset
+    ├── VFXManager.asset
+    └── XRSettings.asset
+
+12 directories, 65 files
