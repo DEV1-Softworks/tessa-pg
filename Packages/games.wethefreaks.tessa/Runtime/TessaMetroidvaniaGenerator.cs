@@ -1,24 +1,31 @@
 using System.Collections.Generic;
-using System.Numerics;
 using UnityEngine;
 
 public class TessaMetroidvaniaGenerator : MonoBehaviour
 {
-    [Header("Prefabs")]
-    public GameObject roomPrefab;
-
     [Header("Generation (Defaults)")]
     [Range(8, 20)] public int mainPathRoomCount = 12;
     [Range(1, 6)] public int optionalBranchCount = 3;
-    public Vector2 gridCellSpacing = new Vector2(10f, 10f);
 
     [Header("Ability Gate")]
     public string unlockingAbilityId = "DoubleJump";
     public bool regenerateOnPlay = true;
 
-    private readonly Dictionary<Vector2Int, TessaRoomInstance> occupiedCellsByCoord = new();
-    private readonly List<Vector2Int> mainPathCoords = new();
+    [Header("Gizmos (Editor Preview)")]
+    [SerializeField] private bool drawGizmos = true;
+    [SerializeField] private bool useGizmoSeed = true;
+    [SerializeField] private int gizmoSeed = 12345;
+    [SerializeField] private float gizmoCellSize = 1f;
+    [SerializeField] private Color gizmoMainColor = new Color(0.35f, 0.85f, 0.95f, 0.8f);
+    [SerializeField] private Color gizmoOptionalColor = new Color(0.35f, 0.95f, 0.55f, 0.8f);
+    [SerializeField] private Color gizmoAbilityColor = new Color(0.95f, 0.7f, 0.2f, 0.9f);
+    [SerializeField] private Color gizmoBossColor = new Color(0.95f, 0.3f, 0.3f, 0.9f);
+    [SerializeField] private Color gizmoStartColor = new Color(0.95f, 0.95f, 0.95f, 0.9f);
+    [SerializeField] private Color gizmoLockedColor = new Color(0.9f, 0.2f, 0.9f, 0.9f);
+
     private Edge lockedConnectionEdge;
+    private TessaLevelLayout cachedGizmoLayout;
+    private int cachedGizmoHash;
 
     [SerializeField] private TessaTilemapPainter tilemapPainter;
 
@@ -33,27 +40,40 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
     [ContextMenu("Generate Level")]
     public void GenerateLevel()
     {
-        ClearGeneratedRooms();
-
-        occupiedCellsByCoord.Clear();
-        mainPathCoords.Clear();
-        lockedConnectionEdge = default;
-
-        if (roomPrefab == null)
-        {
-            Debug.LogError("Room Prefab is not assigned. Please assign it in the inspector.");
-            return;
-        }
-
         if (tilemapPainter == null)
         {
-            Debug.LogError("TessaMetroidvaniaGenerator: TilemapPainter no asignado.");
+            Debug.LogError("TessaMetroidvaniaGenerator: TilemapPainter not assigned.");
             return;
         }
 
+        var layout = BuildLayout(useSeed: false, seed: 0);
+        tilemapPainter.PaintLevel(layout);
+    }
+
+    [ContextMenu("Randomize Gizmo Seed")]
+    private void RandomizeGizmoSeed()
+    {
+        gizmoSeed = Random.Range(int.MinValue, int.MaxValue);
+        cachedGizmoLayout = null;
+    }
+
+    private TessaLevelLayout BuildLayout(bool useSeed, int seed)
+    {
+        var occupiedCells = new HashSet<Vector2Int>();
+        var mainPathCoords = new List<Vector2Int>();
+        lockedConnectionEdge = default;
+
+        Random.State previousState = Random.state;
+        if (useSeed) Random.InitState(seed);
+
+        var layout = new TessaLevelLayout();
         int mainPathLength = Mathf.Max(8, mainPathRoomCount);
         int maxAbilityIndexExclusive = Random.Range(4, Mathf.Min(7, mainPathLength - 2));
         int abilityRoomIndexOnMainPath = Random.Range(2, maxAbilityIndexExclusive);
+        var optionalBranchEdges = new List<Edge>();
+        int placementAttempts = 0;
+        int branchesPlaced = 0;
+        int maxPlacementAttempts = optionalBranchCount * 10;
 
         for (int x = 0; x < mainPathLength; x++)
         {
@@ -64,15 +84,10 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
                                 (x == abilityRoomIndexOnMainPath) ? RoomType.Ability :
                                 RoomType.Normal;
 
-            CreateRoomAt(roomCoordinates, roomType);
             mainPathCoords.Add(roomCoordinates);
+            occupiedCells.Add(roomCoordinates);
+            layout.AddRoom(roomCoordinates, new TessaRoomData(roomCoordinates, roomType));
         }
-
-        var optionalBranchEdges = new List<Edge>();
-
-        int placementAttempts = 0;
-        int branchesPlaced = 0;
-        int maxPlacementAttempts = optionalBranchCount * 10;
 
         while (branchesPlaced < optionalBranchCount && placementAttempts < maxPlacementAttempts * 10)
         {
@@ -85,13 +100,12 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
             Vector2Int candidateDownCoord = parentRoomCoord + Vector2Int.down;
 
             Vector2Int branchRoomCoord;
-
-            if (!occupiedCellsByCoord.ContainsKey(candidateUpCoord)) branchRoomCoord = candidateUpCoord;
-            else if (!occupiedCellsByCoord.ContainsKey(candidateDownCoord)) branchRoomCoord = candidateDownCoord;
+            if (!occupiedCells.Contains(candidateUpCoord)) branchRoomCoord = candidateUpCoord;
+            else if (!occupiedCells.Contains(candidateDownCoord)) branchRoomCoord = candidateDownCoord;
             else continue;
 
-            CreateRoomAt(branchRoomCoord, RoomType.Optional);
-
+            occupiedCells.Add(branchRoomCoord);
+            layout.AddRoom(branchRoomCoord, new TessaRoomData(branchRoomCoord, RoomType.Optional));
             optionalBranchEdges.Add(new Edge(parentRoomCoord, branchRoomCoord, locked: false, requiresAbility: null));
 
             branchesPlaced++;
@@ -106,20 +120,6 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
                 optionalBranchEdges[Random.Range(0, optionalBranchEdges.Count)];
 
             lockedConnectionEdge = chosenEdgeToLock.WithLock(true, unlockingAbilityId);
-        }
-
-        foreach (var occupiedCell in occupiedCellsByCoord)
-        {
-            occupiedCell.Value.Spawn(transform, GridCoordToWorldPosition(occupiedCell.Key));
-        }
-
-        var layout = new TessaLevelLayout();
-
-        foreach (var occupiedCell in occupiedCellsByCoord)
-        {
-            Vector2Int coord = occupiedCell.Key;
-            RoomType type = occupiedCell.Value.Type;
-            layout.AddRoom(coord, new TessaRoomData(coord, type));
         }
 
         for (int i = 0; i < mainPathCoords.Count - 1; i++)
@@ -138,80 +138,70 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
             layout.AddConnection(branchEdge.FromCoord, branchEdge.ToCoord, isLocked, isLocked ? unlockingAbilityId : null);
         }
 
-        var connections = new HashSet<(Vector2Int, Vector2Int)>();
-        var lockedConnections = new HashSet<(Vector2Int, Vector2Int)>();
+        if (useSeed) Random.state = previousState;
+        return layout;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!drawGizmos || Application.isPlaying) return;
+
+        int currentHash = GetGizmoHash();
+        if (cachedGizmoLayout == null || cachedGizmoHash != currentHash)
+        {
+            cachedGizmoHash = currentHash;
+            int seed = useGizmoSeed ? gizmoSeed : Random.Range(int.MinValue, int.MaxValue);
+            cachedGizmoLayout = BuildLayout(useSeed: true, seed: seed);
+        }
+
+        DrawGizmoLayout(cachedGizmoLayout);
+    }
+
+    private void DrawGizmoLayout(TessaLevelLayout layout)
+    {
+        if (layout == null) return;
+
+        foreach (var room in layout.Rooms.Values)
+        {
+            Vector3 center = transform.position + new Vector3(room.Coordinates.x * gizmoCellSize, room.Coordinates.y * gizmoCellSize, 0f);
+            Vector3 size = new Vector3(gizmoCellSize * 0.9f, gizmoCellSize * 0.9f, gizmoCellSize * 0.9f);
+            Gizmos.color = RoomTypeToColor(room.Type);
+            Gizmos.DrawWireCube(center, size);
+        }
 
         foreach (var connection in layout.Connections)
         {
-            connections.Add((connection.From, connection.To));
-            connections.Add((connection.To, connection.From));
-
-            if (connection.Locked)
-            {
-                lockedConnections.Add((connection.From, connection.To));
-                lockedConnections.Add((connection.To, connection.From));
-            }
+            Vector3 from = transform.position + new Vector3(connection.From.x * gizmoCellSize, connection.From.y * gizmoCellSize, 0f);
+            Vector3 to = transform.position + new Vector3(connection.To.x * gizmoCellSize, connection.To.y * gizmoCellSize, 0f);
+            Gizmos.color = connection.Locked ? gizmoLockedColor : gizmoMainColor;
+            Gizmos.DrawLine(from, to);
         }
-
-
     }
 
-    private Vector3 GridCoordToWorldPosition(Vector2Int gridCoord)
-        => new Vector3(gridCoord.x * gridCellSpacing.x, 0f, gridCoord.y * gridCellSpacing.y);
-
-    private void CreateRoomAt(Vector2Int roomCoordinates, RoomType roomType)
+    private Color RoomTypeToColor(RoomType type)
     {
-        if (occupiedCellsByCoord.ContainsKey(roomCoordinates)) return;
-        occupiedCellsByCoord[roomCoordinates] = new TessaRoomInstance(roomCoordinates, roomType, roomPrefab);
-    }
-
-    private static Direction DirectionFromTo(Vector2Int fromCoord, Vector2Int toCoord)
-    {
-        Vector2Int delta = toCoord - fromCoord;
-
-        if (delta == Vector2Int.up) return Direction.North;
-        if (delta == Vector2Int.right) return Direction.East;
-        if (delta == Vector2Int.down) return Direction.South;
-
-        return Direction.West;
-    }
-
-    private void SetDoorOpenState(TessaRoomInstance roomInstance, Direction direction, bool isOpen)
-    {
-        Transform doorTransform = roomInstance.GetDoor(direction);
-
-        if (doorTransform == null) return;
-
-        Collider2D collider2D = doorTransform.GetComponent<Collider2D>();
-
-        if (collider2D != null)
+        return type switch
         {
-            collider2D.enabled = !isOpen;
-        }
-
-        doorTransform.gameObject.SetActive(true);
+            RoomType.Start => gizmoStartColor,
+            RoomType.Boss => gizmoBossColor,
+            RoomType.Ability => gizmoAbilityColor,
+            RoomType.Optional => gizmoOptionalColor,
+            _ => gizmoMainColor
+        };
     }
 
-    private void SetDoorLocked(TessaRoomInstance roomInstance, Direction direction, string requiredAbility)
+    private int GetGizmoHash()
     {
-        Transform doorTransform = roomInstance.GetDoor(direction);
-        if (doorTransform == null) return;
-
-        Collider2D collider2D = doorTransform.GetComponent<Collider2D>();
-        if (collider2D != null) collider2D.enabled = true;
-
-        TessaAbilityGate2D gate = doorTransform.GetComponent<TessaAbilityGate2D>();
-        if (gate != null) gate = doorTransform.gameObject.AddComponent<TessaAbilityGate2D>();
-        gate.requiredAbilityId = requiredAbility;
-    }
-
-    private void ClearGeneratedRooms()
-    {
-        for (int i = transform.childCount - 1; i >= 0; i--)
+        unchecked
         {
-            Transform child = transform.GetChild(i);
-            if (Application.isPlaying) Destroy(child.gameObject);
-            else DestroyImmediate(child.gameObject);
+            int hash = 17;
+            hash = hash * 31 + mainPathRoomCount;
+            hash = hash * 31 + optionalBranchCount;
+            hash = hash * 31 + (unlockingAbilityId != null ? unlockingAbilityId.GetHashCode() : 0);
+            hash = hash * 31 + gizmoCellSize.GetHashCode();
+            hash = hash * 31 + (useGizmoSeed ? 1 : 0);
+            hash = hash * 31 + gizmoSeed;
+            return hash;
         }
     }
 

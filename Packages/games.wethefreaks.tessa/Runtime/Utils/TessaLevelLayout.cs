@@ -1,8 +1,5 @@
-using UnityEngine;
-using System.Data;
-using System.Numerics;
-using System.Text;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class TessaLevelLayout
 {

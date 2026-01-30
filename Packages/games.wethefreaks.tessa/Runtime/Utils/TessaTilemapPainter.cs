@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 
-public class TessaTilemapPainter : MonoBehaviour
+public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
 {
     [Header("Tilemaps")]
     [SerializeField] private Tilemap floorTilemap;
@@ -24,8 +24,34 @@ public class TessaTilemapPainter : MonoBehaviour
         maxRoomSizeTiles.y + cellPaddingTiles * 2
     );
 
+    public void PaintLevel(TessaLevelLayout layout)
+    {
+        if (layout == null)
+        {
+            Debug.LogError("TessaTilemapPainter: Layout is null.");
+            return;
+        }
+
+        var roomConnections = new HashSet<(Vector2Int from, Vector2Int to)>();
+        var lockedConnections = new HashSet<(Vector2Int from, Vector2Int to)>();
+
+        foreach (var connection in layout.Connections)
+        {
+            roomConnections.Add((connection.From, connection.To));
+            roomConnections.Add((connection.To, connection.From));
+
+            if (connection.Locked)
+            {
+                lockedConnections.Add((connection.From, connection.To));
+                lockedConnections.Add((connection.To, connection.From));
+            }
+        }
+
+        Paint(layout.Rooms, roomConnections, lockedConnections);
+    }
+
     public void Paint(
-        Dictionary<Vector2Int, object> rooms,
+        Dictionary<Vector2Int, TessaRoomData> rooms,
         HashSet<(Vector2Int from, Vector2Int to)> roomConnections,
         HashSet<(Vector2Int from, Vector2Int to)> lockedConnections
     )
