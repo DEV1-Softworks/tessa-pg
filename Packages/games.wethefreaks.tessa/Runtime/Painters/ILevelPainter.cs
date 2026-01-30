@@ -1,4 +1,4 @@
 public interface ILevelPainter
 {
-    void PaintLevel(LevelLayout layout);
+    void PaintLevel(TessaLevelLayout layout);
 }

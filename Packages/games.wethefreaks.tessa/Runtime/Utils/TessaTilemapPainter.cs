@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System.Numerics;
 using System.Collections.Generic;
 
 public class TessaTilemapPainter : MonoBehaviour
@@ -28,7 +27,7 @@ public class TessaTilemapPainter : MonoBehaviour
     public void Paint(
         Dictionary<Vector2Int, object> rooms,
         HashSet<(Vector2Int from, Vector2Int to)> roomConnections,
-        HashSet<(Vector2Int from, Vector2Int to)> gatePositions
+        HashSet<(Vector2Int from, Vector2Int to)> lockedConnections
     )
     {
         if (floorTilemap == null || wallTilemap == null || floorTile == null || wallTile == null)
@@ -65,8 +64,8 @@ public class TessaTilemapPainter : MonoBehaviour
         int randomWidth = RandomStepped(minRoomSizeTiles.x, maxRoomSizeTiles.x, stepTiles);
         int randomHeight = RandomStepped(minRoomSizeTiles.y, maxRoomSizeTiles.y, stepTiles);
 
-        randomWidth = MathF.Max(4, randomWidth);
-        randomHeight = MathF.Max(4, randomHeight);
+        randomWidth = Mathf.Max(4, randomWidth);
+        randomHeight = Mathf.Max(4, randomHeight);
 
         return new Vector2Int(randomWidth, randomHeight);
     }
@@ -74,8 +73,8 @@ public class TessaTilemapPainter : MonoBehaviour
     private static int RandomStepped(int minInclusive, int maxInclusive, int step)
     {
         if (step <= 0) step = 1;
-        int minSteps = MathF.CeilToInt(minInclusive / (float)step);
-        int maxSteps = MathF.FloorToInt(maxInclusive / (float)step);
+        int minSteps = Mathf.CeilToInt(minInclusive / (float)step);
+        int maxSteps = Mathf.FloorToInt(maxInclusive / (float)step);
         int chosenSteps = Random.Range(minSteps, maxSteps + 1);
         return chosenSteps * step;
     }
