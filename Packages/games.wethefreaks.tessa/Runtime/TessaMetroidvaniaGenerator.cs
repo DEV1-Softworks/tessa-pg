@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Numerics;
 using UnityEngine;
 
-public class TessaRoomMakerGenerator : MonoBehaviour
+public class TessaMetroidvaniaGenerator : MonoBehaviour
 {
     [Header("Prefabs")]
     public GameObject roomPrefab;
@@ -18,6 +19,8 @@ public class TessaRoomMakerGenerator : MonoBehaviour
     private readonly Dictionary<Vector2Int, TessaRoomInstance> occupiedCellsByCoord = new();
     private readonly List<Vector2Int> mainPathCoords = new();
     private Edge lockedConnectionEdge;
+
+    [SerializeField] private TessaTilemapPainter tilemapPainter;
 
     private void Start()
     {
@@ -39,6 +42,12 @@ public class TessaRoomMakerGenerator : MonoBehaviour
         if (roomPrefab == null)
         {
             Debug.LogError("Room Prefab is not assigned. Please assign it in the inspector.");
+            return;
+        }
+
+        if (tilemapPainter == null)
+        {
+            Debug.LogError("TessaMetroidvaniaGenerator: TilemapPainter no asignado.");
             return;
         }
 
@@ -104,15 +113,47 @@ public class TessaRoomMakerGenerator : MonoBehaviour
             occupiedCell.Value.Spawn(transform, GridCoordToWorldPosition(occupiedCell.Key));
         }
 
+        var layout = new TessaLevelLayout();
+
         foreach (var occupiedCell in occupiedCellsByCoord)
         {
-            ConnectDoorsForRoomAt(occupiedCell.Key);
+            Vector2Int coord = occupiedCell.Key;
+            RoomType type = occupiedCell.Value.Type;
+            layout.AddRoom(coord, new TessaRoomData(coord, type));
         }
 
-        if (lockedConnectionEdge.IsValid)
+        for (int i = 0; i < mainPathCoords.Count - 1; i++)
         {
-            ApplyLockedDoor(lockedConnectionEdge);
+            var from = mainPathCoords[i];
+            var to = mainPathCoords[i + 1];
+            layout.AddConnection(from, to, locked: false);
         }
+
+        foreach (var branchEdge in optionalBranchEdges)
+        {
+            bool isLocked = lockedConnectionEdge.IsValid &&
+                            ((branchEdge.FromCoord == lockedConnectionEdge.FromCoord && branchEdge.ToCoord == lockedConnectionEdge.ToCoord) ||
+                             (branchEdge.FromCoord == lockedConnectionEdge.ToCoord && branchEdge.ToCoord == lockedConnectionEdge.FromCoord));
+
+            layout.AddConnection(branchEdge.FromCoord, branchEdge.ToCoord, isLocked, isLocked ? unlockingAbilityId : null);
+        }
+
+        var connections = new HashSet<(Vector2Int, Vector2Int)>();
+        var lockedConnections = new HashSet<(Vector2Int, Vector2Int)>();
+
+        foreach (var connection in layout.Connections)
+        {
+            connections.Add((connection.From, connection.To));
+            connections.Add((connection.To, connection.From));
+
+            if (connection.Locked)
+            {
+                lockedConnections.Add((connection.From, connection.To));
+                lockedConnections.Add((connection.To, connection.From));
+            }
+        }
+
+
     }
 
     private Vector3 GridCoordToWorldPosition(Vector2Int gridCoord)
@@ -122,28 +163,6 @@ public class TessaRoomMakerGenerator : MonoBehaviour
     {
         if (occupiedCellsByCoord.ContainsKey(roomCoordinates)) return;
         occupiedCellsByCoord[roomCoordinates] = new TessaRoomInstance(roomCoordinates, roomType, roomPrefab);
-    }
-
-    private void ConnectDoorsForRoomAt(Vector2Int roomCoordinates)
-    {
-        if (!occupiedCellsByCoord.TryGetValue(roomCoordinates, out var roomInstance) || roomInstance.View == null) return;
-
-        SetDoorOpenState(roomInstance, Direction.North, occupiedCellsByCoord.ContainsKey(roomCoordinates + Vector2Int.up));
-        SetDoorOpenState(roomInstance, Direction.East, occupiedCellsByCoord.ContainsKey(roomCoordinates + Vector2Int.right));
-        SetDoorOpenState(roomInstance, Direction.South, occupiedCellsByCoord.ContainsKey(roomCoordinates + Vector2Int.down));
-        SetDoorOpenState(roomInstance, Direction.West, occupiedCellsByCoord.ContainsKey(roomCoordinates + Vector2Int.left));
-    }
-
-    private void ApplyLockedDoor(Edge edge)
-    {
-        if (!occupiedCellsByCoord.TryGetValue(edge.FromCoord, out var fromRoom) || fromRoom.View == null) return;
-        if (!occupiedCellsByCoord.TryGetValue(edge.ToCoord, out var toRoom) || toRoom.View == null) return;
-
-        Direction directionFromFromToTo = DirectionFromTo(edge.FromCoord, edge.ToCoord);
-        Direction directionFromToToFrom = DirectionFromTo(edge.ToCoord, edge.FromCoord);
-
-        SetDoorLocked(fromRoom, directionFromFromToTo, edge.RequiresAbility);
-        SetDoorLocked(toRoom, directionFromToToFrom, edge.RequiresAbility);
     }
 
     private static Direction DirectionFromTo(Vector2Int fromCoord, Vector2Int toCoord)
