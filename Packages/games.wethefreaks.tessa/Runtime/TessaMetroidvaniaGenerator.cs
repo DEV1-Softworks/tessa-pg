@@ -11,21 +11,11 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
     public string unlockingAbilityId = "DoubleJump";
     public bool regenerateOnPlay = true;
 
-    [Header("Gizmos (Editor Preview)")]
-    [SerializeField] private bool drawGizmos = true;
-    [SerializeField] private bool useGizmoSeed = true;
-    [SerializeField] private int gizmoSeed = 12345;
-    [SerializeField] private float gizmoCellSize = 1f;
-    [SerializeField] private Color gizmoMainColor = new Color(0.35f, 0.85f, 0.95f, 0.8f);
-    [SerializeField] private Color gizmoOptionalColor = new Color(0.35f, 0.95f, 0.55f, 0.8f);
-    [SerializeField] private Color gizmoAbilityColor = new Color(0.95f, 0.7f, 0.2f, 0.9f);
-    [SerializeField] private Color gizmoBossColor = new Color(0.95f, 0.3f, 0.3f, 0.9f);
-    [SerializeField] private Color gizmoStartColor = new Color(0.95f, 0.95f, 0.95f, 0.9f);
-    [SerializeField] private Color gizmoLockedColor = new Color(0.9f, 0.2f, 0.9f, 0.9f);
+    [Header("Start Room Alignment")]
+    [SerializeField] private bool alignStartRoomToCamera = true;
+    [SerializeField] private Camera startCamera;
 
     private Edge lockedConnectionEdge;
-    private TessaLevelLayout cachedGizmoLayout;
-    private int cachedGizmoHash;
 
     [SerializeField] private TessaTilemapPainter tilemapPainter;
 
@@ -46,15 +36,17 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
             return;
         }
 
+        if (alignStartRoomToCamera)
+        {
+            Camera cameraToUse = startCamera != null ? startCamera : Camera.main;
+            if (cameraToUse != null)
+            {
+                tilemapPainter.AlignStartRoomToWorldPosition(cameraToUse.transform.position);
+            }
+        }
+
         var layout = BuildLayout(useSeed: false, seed: 0);
         tilemapPainter.PaintLevel(layout);
-    }
-
-    [ContextMenu("Randomize Gizmo Seed")]
-    private void RandomizeGizmoSeed()
-    {
-        gizmoSeed = Random.Range(int.MinValue, int.MaxValue);
-        cachedGizmoLayout = null;
     }
 
     private TessaLevelLayout BuildLayout(bool useSeed, int seed)
@@ -140,69 +132,6 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
 
         if (useSeed) Random.state = previousState;
         return layout;
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (!drawGizmos || Application.isPlaying) return;
-
-        int currentHash = GetGizmoHash();
-        if (cachedGizmoLayout == null || cachedGizmoHash != currentHash)
-        {
-            cachedGizmoHash = currentHash;
-            int seed = useGizmoSeed ? gizmoSeed : Random.Range(int.MinValue, int.MaxValue);
-            cachedGizmoLayout = BuildLayout(useSeed: true, seed: seed);
-        }
-
-        DrawGizmoLayout(cachedGizmoLayout);
-    }
-
-    private void DrawGizmoLayout(TessaLevelLayout layout)
-    {
-        if (layout == null) return;
-
-        foreach (var room in layout.Rooms.Values)
-        {
-            Vector3 center = transform.position + new Vector3(room.Coordinates.x * gizmoCellSize, room.Coordinates.y * gizmoCellSize, 0f);
-            Vector3 size = new Vector3(gizmoCellSize * 0.9f, gizmoCellSize * 0.9f, gizmoCellSize * 0.9f);
-            Gizmos.color = RoomTypeToColor(room.Type);
-            Gizmos.DrawWireCube(center, size);
-        }
-
-        foreach (var connection in layout.Connections)
-        {
-            Vector3 from = transform.position + new Vector3(connection.From.x * gizmoCellSize, connection.From.y * gizmoCellSize, 0f);
-            Vector3 to = transform.position + new Vector3(connection.To.x * gizmoCellSize, connection.To.y * gizmoCellSize, 0f);
-            Gizmos.color = connection.Locked ? gizmoLockedColor : gizmoMainColor;
-            Gizmos.DrawLine(from, to);
-        }
-    }
-
-    private Color RoomTypeToColor(RoomType type)
-    {
-        return type switch
-        {
-            RoomType.Start => gizmoStartColor,
-            RoomType.Boss => gizmoBossColor,
-            RoomType.Ability => gizmoAbilityColor,
-            RoomType.Optional => gizmoOptionalColor,
-            _ => gizmoMainColor
-        };
-    }
-
-    private int GetGizmoHash()
-    {
-        unchecked
-        {
-            int hash = 17;
-            hash = hash * 31 + mainPathRoomCount;
-            hash = hash * 31 + optionalBranchCount;
-            hash = hash * 31 + (unlockingAbilityId != null ? unlockingAbilityId.GetHashCode() : 0);
-            hash = hash * 31 + gizmoCellSize.GetHashCode();
-            hash = hash * 31 + (useGizmoSeed ? 1 : 0);
-            hash = hash * 31 + gizmoSeed;
-            return hash;
-        }
     }
 
     private readonly struct Edge
