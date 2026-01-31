@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TessaMetroidvaniaGenerator : MonoBehaviour
+public class TessaGenerator : MonoBehaviour
 {
     [Header("Generation (Defaults)")]
     [Range(8, 20)] public int mainPathRoomCount = 12;
@@ -17,7 +17,7 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
 
     private Edge lockedConnectionEdge;
 
-    [SerializeField] private TessaTilemapPainter tilemapPainter;
+    [SerializeField] private TessaMetroidvaniaTilemapPainter tilemapPainter;
 
     private void Start()
     {
@@ -32,7 +32,7 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
     {
         if (tilemapPainter == null)
         {
-            Debug.LogError("TessaMetroidvaniaGenerator: TilemapPainter not assigned.");
+            Debug.LogError("TessaGenerator: TilemapPainter not assigned.");
             return;
         }
 
@@ -130,6 +130,8 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
             layout.AddConnection(branchEdge.FromCoord, branchEdge.ToCoord, isLocked, isLocked ? unlockingAbilityId : null);
         }
 
+        EnsureSingleBossRoom(layout, mainPathCoords[mainPathCoords.Count - 1]);
+
         if (useSeed) Random.state = previousState;
         return layout;
     }
@@ -152,5 +154,24 @@ public class TessaMetroidvaniaGenerator : MonoBehaviour
 
         public Edge WithLock(bool locked, string requiresAbility)
             => new Edge(FromCoord, ToCoord, locked, locked ? requiresAbility : null);
+    }
+
+    private static void EnsureSingleBossRoom(TessaLevelLayout layout, Vector2Int bossCoord)
+    {
+        var rooms = layout.Rooms;
+
+        foreach (var pair in rooms)
+        {
+            Vector2Int coord = pair.Key;
+            RoomType type = pair.Value.Type;
+
+            if (coord == bossCoord)
+            {
+                if (type != RoomType.Boss) rooms[coord] = new TessaRoomData(coord, RoomType.Boss);
+                continue;
+            }
+
+            if (type == RoomType.Boss) rooms[coord] = new TessaRoomData(coord, RoomType.Normal);
+        }
     }
 }

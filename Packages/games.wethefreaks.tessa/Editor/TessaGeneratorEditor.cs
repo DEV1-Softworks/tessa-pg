@@ -1,8 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(TessaMetroidvaniaGenerator))]
-public class TessaMetroidvaniaGeneratorEditor : Editor
+[CustomEditor(typeof(TessaGenerator))]
+public class TessaGeneratorEditor : Editor
 {
     public override void OnInspectorGUI()
     {
@@ -12,7 +12,7 @@ public class TessaMetroidvaniaGeneratorEditor : Editor
 
         if (GUILayout.Button("Generate Sample Level"))
         {
-            var generator = (TessaMetroidvaniaGenerator)target;
+            var generator = (TessaGenerator)target;
             generator.GenerateLevel();
             EditorUtility.SetDirty(generator);
             SceneView.RepaintAll();

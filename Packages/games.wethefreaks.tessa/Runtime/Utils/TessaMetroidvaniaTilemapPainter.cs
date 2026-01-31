@@ -1,9 +1,19 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
+using Games.Wethefreaks.Tessa.Runtime.Algorithms.Platformer;
 
-public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
+public class TessaMetroidvaniaTilemapPainter : MonoBehaviour, ILevelPainter
 {
+    public enum PlatformAlgorithmType
+    {
+        Tiered,
+        PoissonRow,
+        CriticalPath,
+        Noise,
+        PatternLibrary
+    }
+
     [Header("Tilemaps")]
     [SerializeField] private Tilemap floorTilemap;
     [SerializeField] private Tilemap wallTilemap;
@@ -43,11 +53,47 @@ public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
     [Header("Platforms (inner)")]
     [Range(0f, 1f)]
     [SerializeField] private float platformChance = 0.7f;
-    [SerializeField] private Vector2Int platformsPerRoom = new(1, 3);
     [SerializeField] private Vector2Int platformLengthTiles = new(4, 10);
     [SerializeField] private int platformHorizontalPadding = 2;
     [SerializeField] private int platformVerticalPadding = 2;
-    [SerializeField] private int platformMinVerticalSpacing = 2;
+
+    [Header("Platform Algorithm")]
+    [SerializeField] private PlatformAlgorithmType platformAlgorithm = PlatformAlgorithmType.Tiered;
+
+    [Header("Algorithm: Tiered")]
+    [SerializeField] private int tieredMinPlatforms = 2;
+    [SerializeField] private int tieredMaxPlatforms = 4;
+    [SerializeField] private int tieredMinLength = 4;
+    [SerializeField] private int tieredMaxLength = 10;
+    [SerializeField] private int tieredTierCount = 3;
+    [SerializeField] private int tieredMinVerticalSpacing = 2;
+
+    [Header("Algorithm: Poisson Row")]
+    [SerializeField] private int poissonMinLength = 4;
+    [SerializeField] private int poissonMaxLength = 10;
+    [SerializeField] private int poissonMinRowSpacing = 2;
+    [SerializeField] private int poissonMaxPlatforms = 4;
+    [SerializeField] private int poissonMaxAttempts = 24;
+
+    [Header("Algorithm: Critical Path")]
+    [SerializeField] private int criticalMinPlatformLength = 4;
+    [SerializeField] private int criticalMaxPlatformLength = 10;
+    [SerializeField] private int criticalMinStepX = 2;
+    [SerializeField] private int criticalMaxStepX = 6;
+    [SerializeField] private int criticalMaxStepY = 2;
+    [SerializeField] private int criticalExtraPlatforms = 1;
+
+    [Header("Algorithm: Noise")]
+    [SerializeField] private float noiseScale = 0.15f;
+    [Range(0f, 1f)]
+    [SerializeField] private float noiseThreshold = 0.5f;
+    [SerializeField] private int noiseMinLength = 4;
+    [SerializeField] private int noiseMaxLength = 10;
+    [SerializeField] private int noiseMaxPlatforms = 4;
+    [SerializeField] private int noiseSeed = 12345;
+
+    [Header("Algorithm: Pattern Library")]
+    [SerializeField] private int patternMaxPatternsPerRoom = 1;
 
     private Tilemap PlatformTilemap => platformTilemap != null ? platformTilemap : wallTilemap;
 
@@ -65,6 +111,11 @@ public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
         }
 
         Paint(layout.Rooms, layout.Connections);
+    }
+
+    public void SetPlatformAlgorithm(PlatformAlgorithmType algorithmType)
+    {
+        platformAlgorithm = algorithmType;
     }
 
     public void Paint(
@@ -102,7 +153,7 @@ public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
             PaintRoomRectangle(roomOriginTiles, roomSizeTiles);
             if (roomEntry.Value.Type != RoomType.Boss)
             {
-                PaintPlatforms(roomOriginTiles, roomSizeTiles);
+                PaintPlatforms(roomOriginTiles, roomSizeTiles, forceAtLeastOne: true);
             }
         }
 
@@ -172,58 +223,97 @@ public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
         if (wallCornerTopRightTile != null) wallTilemap.SetTile(new Vector3Int(rightX, topY, 0), wallCornerTopRightTile);
     }
 
-    private void PaintPlatforms(Vector2Int roomOriginTiles, Vector2Int roomSizeTiles)
+    private void PaintPlatforms(Vector2Int roomOriginTiles, Vector2Int roomSizeTiles, bool forceAtLeastOne)
     {
         if (platformTile == null) return;
-        if (Random.value > platformChance) return;
+        if (!forceAtLeastOne && Random.value > platformChance) return;
 
-        int leftX = roomOriginTiles.x + platformHorizontalPadding + 1;
-        int rightX = roomOriginTiles.x + roomSizeTiles.x - 1 - platformHorizontalPadding - 1;
-        int bottomY = roomOriginTiles.y + platformVerticalPadding + 1;
-        int topY = roomOriginTiles.y + roomSizeTiles.y - 1 - platformVerticalPadding - 1;
+        var placementContext = PlatformPlacementContext.FromRoom(
+            roomOriginTiles,
+            roomSizeTiles,
+            platformHorizontalPadding,
+            platformVerticalPadding
+        );
+        if (!placementContext.IsValid) return;
 
-        int availableWidth = rightX - leftX + 1;
-        if (availableWidth < platformLengthTiles.x || topY <= bottomY) return;
+        IPlatformPlacementAlgorithm algorithm = CreatePlatformAlgorithm(forceAtLeastOne);
+        var randomSource = new UnityRandomSource();
+        IReadOnlyList<PlatformSegment> segments = algorithm.GeneratePlatforms(placementContext, randomSource);
 
-        int minPlatforms = Mathf.Clamp(platformsPerRoom.x, 0, platformsPerRoom.y);
-        int maxPlatforms = Mathf.Max(minPlatforms, platformsPerRoom.y);
-        int platformCount = Random.Range(minPlatforms, maxPlatforms + 1);
-
-        var usedRows = new HashSet<int>();
-
-        for (int i = 0; i < platformCount; i++)
+        if (forceAtLeastOne && segments.Count == 0)
         {
-            int attempts = 0;
-            int rowY;
-            do
-            {
-                rowY = Random.Range(bottomY, topY + 1);
-                attempts++;
-            }
-            while (IsRowTooClose(rowY, usedRows, platformMinVerticalSpacing) && attempts < 10);
+            segments = CreateFallbackPlatform(placementContext);
+        }
 
-            usedRows.Add(rowY);
-
-            int maxLength = Mathf.Min(platformLengthTiles.y, availableWidth);
-            int minLength = Mathf.Min(platformLengthTiles.x, maxLength);
-            int length = Random.Range(minLength, maxLength + 1);
-            int startX = Random.Range(leftX, rightX - length + 2);
-
-            for (int x = startX; x < startX + length; x++)
-            {
-                PlatformTilemap.SetTile(new Vector3Int(x, rowY, 0), platformTile);
-            }
+        foreach (var segment in segments)
+        {
+            PaintPlatformSegment(segment);
         }
     }
 
-    private static bool IsRowTooClose(int rowY, HashSet<int> usedRows, int minSpacing)
+    private IPlatformPlacementAlgorithm CreatePlatformAlgorithm(bool forceAtLeastOne)
     {
-        foreach (int used in usedRows)
+        switch (platformAlgorithm)
         {
-            if (Mathf.Abs(used - rowY) <= minSpacing) return true;
+            case PlatformAlgorithmType.PoissonRow:
+                return new PoissonRowPlatformAlgorithm(
+                    poissonMinLength,
+                    poissonMaxLength,
+                    poissonMinRowSpacing,
+                    forceAtLeastOne ? Mathf.Max(1, poissonMaxPlatforms) : poissonMaxPlatforms,
+                    poissonMaxAttempts
+                );
+            case PlatformAlgorithmType.CriticalPath:
+                return new CriticalPathPlatformAlgorithm(
+                    criticalMinPlatformLength,
+                    criticalMaxPlatformLength,
+                    criticalMinStepX,
+                    criticalMaxStepX,
+                    criticalMaxStepY,
+                    criticalExtraPlatforms
+                );
+            case PlatformAlgorithmType.Noise:
+                return new NoisePlatformAlgorithm(
+                    noiseScale,
+                    noiseThreshold,
+                    noiseMinLength,
+                    noiseMaxLength,
+                    forceAtLeastOne ? Mathf.Max(1, noiseMaxPlatforms) : noiseMaxPlatforms,
+                    noiseSeed
+                );
+            case PlatformAlgorithmType.PatternLibrary:
+                return new PatternLibraryPlatformAlgorithm(
+                    DefaultPlatformPatterns.Create(),
+                    forceAtLeastOne ? Mathf.Max(1, patternMaxPatternsPerRoom) : patternMaxPatternsPerRoom
+                );
+            default:
+                return new TieredPlatformAlgorithm(
+                    tieredMinPlatforms,
+                    tieredMaxPlatforms,
+                    tieredMinLength,
+                    tieredMaxLength,
+                    tieredTierCount,
+                    tieredMinVerticalSpacing
+                );
         }
+    }
 
-        return false;
+    private IReadOnlyList<PlatformSegment> CreateFallbackPlatform(PlatformPlacementContext context)
+    {
+        int length = Mathf.Clamp(platformLengthTiles.x, 1, context.Width);
+        int startX = Mathf.Clamp(context.MinX + (context.Width - length) / 2, context.MinX, context.MaxX - length + 1);
+        int rowY = Mathf.Clamp(context.MinY + context.Height / 2, context.MinY, context.MaxY);
+        return new List<PlatformSegment> { new PlatformSegment(startX, length, rowY) };
+    }
+
+    private void PaintPlatformSegment(PlatformSegment segment)
+    {
+        if (!segment.IsValid) return;
+
+        for (int x = segment.StartX; x <= segment.EndX; x++)
+        {
+            PlatformTilemap.SetTile(new Vector3Int(x, segment.Y, 0), platformTile);
+        }
     }
 
     private void CarveCorridor(
@@ -367,12 +457,37 @@ public class TessaTilemapPainter : MonoBehaviour, ILevelPainter
         stepTiles = Mathf.Max(1, stepTiles);
         cellPaddingTiles = Mathf.Max(0, cellPaddingTiles);
 
-        platformsPerRoom = new Vector2Int(Mathf.Max(0, platformsPerRoom.x), Mathf.Max(platformsPerRoom.x, platformsPerRoom.y));
         platformLengthTiles = new Vector2Int(Mathf.Max(2, platformLengthTiles.x), Mathf.Max(platformLengthTiles.x, platformLengthTiles.y));
         platformHorizontalPadding = Mathf.Max(0, platformHorizontalPadding);
         platformVerticalPadding = Mathf.Max(0, platformVerticalPadding);
-        platformMinVerticalSpacing = Mathf.Max(0, platformMinVerticalSpacing);
         corridorThicknessTiles = Mathf.Max(1, corridorThicknessTiles);
+
+        tieredMinPlatforms = Mathf.Max(0, tieredMinPlatforms);
+        tieredMaxPlatforms = Mathf.Max(tieredMinPlatforms, tieredMaxPlatforms);
+        tieredMinLength = Mathf.Max(1, tieredMinLength);
+        tieredMaxLength = Mathf.Max(tieredMinLength, tieredMaxLength);
+        tieredTierCount = Mathf.Max(1, tieredTierCount);
+        tieredMinVerticalSpacing = Mathf.Max(0, tieredMinVerticalSpacing);
+
+        poissonMinLength = Mathf.Max(1, poissonMinLength);
+        poissonMaxLength = Mathf.Max(poissonMinLength, poissonMaxLength);
+        poissonMinRowSpacing = Mathf.Max(0, poissonMinRowSpacing);
+        poissonMaxPlatforms = Mathf.Max(0, poissonMaxPlatforms);
+        poissonMaxAttempts = Mathf.Max(1, poissonMaxAttempts);
+
+        criticalMinPlatformLength = Mathf.Max(1, criticalMinPlatformLength);
+        criticalMaxPlatformLength = Mathf.Max(criticalMinPlatformLength, criticalMaxPlatformLength);
+        criticalMinStepX = Mathf.Max(1, criticalMinStepX);
+        criticalMaxStepX = Mathf.Max(criticalMinStepX, criticalMaxStepX);
+        criticalMaxStepY = Mathf.Max(0, criticalMaxStepY);
+        criticalExtraPlatforms = Mathf.Max(0, criticalExtraPlatforms);
+
+        noiseScale = Mathf.Max(0.0001f, noiseScale);
+        noiseThreshold = Mathf.Clamp01(noiseThreshold);
+        noiseMinLength = Mathf.Max(1, noiseMinLength);
+        noiseMaxLength = Mathf.Max(noiseMinLength, noiseMaxLength);
+        noiseMaxPlatforms = Mathf.Max(0, noiseMaxPlatforms);
+        patternMaxPatternsPerRoom = Mathf.Max(0, patternMaxPatternsPerRoom);
 
         ApplySortingOrders();
     }
