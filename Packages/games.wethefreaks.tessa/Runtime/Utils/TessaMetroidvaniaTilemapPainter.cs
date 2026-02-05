@@ -413,22 +413,22 @@ public class TessaMetroidvaniaTilemapPainter : MonoBehaviour, ILevelPainter
 
             if (wallCornerBottomLeftTile != null)
             {
-                wallTilemap.SetTile(new Vector3Int(minX - 1, minY - 1, 0), wallCornerBottomLeftTile);
+                wallTilemap.SetTile(new Vector3Int(minX, minY - 1, 0), wallCornerBottomLeftTile);
             }
 
             if (wallCornerTopLeftTile != null)
             {
-                wallTilemap.SetTile(new Vector3Int(minX - 1, maxY + 1, 0), wallCornerTopLeftTile);
+                wallTilemap.SetTile(new Vector3Int(minX, maxY + 1, 0), wallCornerTopLeftTile);
             }
 
             if (wallCornerBottomRightTile != null)
             {
-                wallTilemap.SetTile(new Vector3Int(maxX + 1, minY - 1, 0), wallCornerBottomRightTile);
+                wallTilemap.SetTile(new Vector3Int(maxX, minY - 1, 0), wallCornerBottomRightTile);
             }
 
             if (wallCornerTopRightTile != null)
             {
-                wallTilemap.SetTile(new Vector3Int(maxX + 1, maxY + 1, 0), wallCornerTopRightTile);
+                wallTilemap.SetTile(new Vector3Int(maxX, maxY + 1, 0), wallCornerTopRightTile);
             }
         }
     }
