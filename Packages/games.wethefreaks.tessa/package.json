@@ -1,8 +1,12 @@
 {
   "name": "games.wethefreaks.tessa",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Tessa Procedural Generator",
   "unity": "6000.0",
   "description": "Jam-friendly procedural room grid generator for 2D prototypes.",
-  "author": { "name": "We, The Freaks" }
+  "author": {
+    "name": "We, The Freaks",
+    "url": "https://tessa.wethefreaks.games",
+    "email": "marco.ramirez@wethefreaks.games"
+  }
 }
