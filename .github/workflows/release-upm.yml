@@ -30,13 +30,12 @@ jobs:
         env:
           PACKAGE_DIR: Packages/games.wethefreaks.tessa
 
-      - name: Create UPM zip
-        run: |
-          ARCHIVE_NAME="${{ steps.vars.outputs.package_name }}-${{ steps.vars.outputs.tag }}.zip"
-          cd "${{ steps.vars.outputs.package_dir }}"
-          zip -r "../../${ARCHIVE_NAME}" .
-          echo "archive=${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Create UPM tgz
         id: archive
+        run: |
+          ARCHIVE_NAME="${{ steps.vars.outputs.package_name }}-${{ steps.vars.outputs.tag }}.tgz"
+          tar -C "${{ steps.vars.outputs.package_dir }}" -czf "${ARCHIVE_NAME}" .
+          echo "archive=${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Release
         uses: softprops/action-gh-release@v2
