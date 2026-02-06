@@ -37,9 +37,12 @@ public class TessaAlternativePlatformerTilemapPainter : MonoBehaviour, ILevelPai
         wallTilemap.ClearAllTiles();
         if (hazardTilemap != null) hazardTilemap.ClearAllTiles();
 
+        var coordMap = BuildNormalizedCoordMap(layout.Rooms, gridWidth, gridHeight);
+
         foreach (var room in layout.Rooms)
         {
-            Vector2Int roomCoord = room.Key;
+            Vector2Int originalCoord = room.Key;
+            Vector2Int roomCoord = coordMap[originalCoord];
 
             if (roomCoord.x < 0 || roomCoord.y < 0 || roomCoord.x >= gridWidth || roomCoord.y >= gridHeight)
             {
@@ -47,10 +50,10 @@ public class TessaAlternativePlatformerTilemapPainter : MonoBehaviour, ILevelPai
                 continue;
             }
 
-            bool openNorth = HasNeighbor(layout, roomCoord, Vector2Int.up);
-            bool openEast = HasNeighbor(layout, roomCoord, Vector2Int.right);
-            bool openSouth = HasNeighbor(layout, roomCoord, Vector2Int.down);
-            bool openWest = HasNeighbor(layout, roomCoord, Vector2Int.left);
+            bool openNorth = HasNeighbor(layout, coordMap, roomCoord, Vector2Int.up);
+            bool openEast = HasNeighbor(layout, coordMap, roomCoord, Vector2Int.right);
+            bool openSouth = HasNeighbor(layout, coordMap, roomCoord, Vector2Int.down);
+            bool openWest = HasNeighbor(layout, coordMap, roomCoord, Vector2Int.left);
 
             TessaRoomTemplate template = PickTemplate(openNorth, openEast, openSouth, openWest);
 
@@ -89,21 +92,27 @@ public class TessaAlternativePlatformerTilemapPainter : MonoBehaviour, ILevelPai
         return true;
     }
 
-    private bool HasNeighbor(TessaLevelLayout layout, Vector2Int from, Vector2Int direction)
+    private static bool HasNeighbor(
+        TessaLevelLayout layout,
+        Dictionary<Vector2Int, Vector2Int> coordMap,
+        Vector2Int normalizedFrom,
+        Vector2Int direction
+    )
     {
-        Vector2Int to = from + direction;
+        Vector2Int normalizedTo = normalizedFrom + direction;
 
-        foreach (var connection in layout.Connections)
+        foreach (var c in layout.Connections)
         {
-            if ((connection.From == from && connection.To == to) ||
-               (connection.From == to && connection.To == from))
-            {
-                return true;
-            }
-        }
+            Vector2Int from = coordMap[c.From];
+            Vector2Int to = coordMap[c.To];
 
+            if ((from == normalizedFrom && to == normalizedTo) ||
+                (from == normalizedTo && to == normalizedFrom))
+                return true;
+        }
         return false;
     }
+
 
     private TessaRoomTemplate PickTemplate(bool openNorth, bool openEast, bool openSouth, bool openWest)
     {
@@ -240,5 +249,50 @@ public class TessaAlternativePlatformerTilemapPainter : MonoBehaviour, ILevelPai
     private Vector2Int ChunkOrigin(Vector2Int roomCoord)
     {
         return new Vector2Int(roomCoord.x * chunkWidth, roomCoord.y * chunkHeight);
+    }
+
+    private static Dictionary<Vector2Int, Vector2Int> BuildNormalizedCoordMap(
+        IReadOnlyDictionary<Vector2Int, TessaRoomData> rooms,
+        int gridWidth,
+        int gridHeight
+    )
+    {
+        int minX = int.MaxValue, minY = int.MaxValue;
+        int maxX = int.MinValue, maxY = int.MinValue;
+
+        foreach (var coord in rooms.Keys)
+        {
+            if (coord.x < minX) minX = coord.x;
+            if (coord.y < minY) minY = coord.y;
+            if (coord.x > maxX) maxX = coord.x;
+            if (coord.y > maxY) maxY = coord.y;
+        }
+
+        // Shifting for min to be at (0,0)
+        Vector2Int shift = new Vector2Int(-minX, -minY);
+
+        // If max is larger than grid limits, we need to scale down to fit (clamping)
+        int width = (maxX - minX) + 1;
+        int height = (maxY - minY) + 1;
+
+        int overflowX = Mathf.Max(0, width - gridWidth);
+        int overflowY = Mathf.Max(0, height - gridHeight);
+
+        shift.x -= overflowX;
+        shift.y -= overflowY;
+
+        var map = new Dictionary<Vector2Int, Vector2Int>(rooms.Count);
+
+        foreach (var original in rooms.Keys)
+        {
+            Vector2Int normalized = original + shift;
+
+            normalized.x = Mathf.Clamp(normalized.x, 0, gridWidth - 1);
+            normalized.y = Mathf.Clamp(normalized.y, 0, gridHeight - 1);
+
+            map[original] = normalized;
+        }
+
+        return map;
     }
 }
