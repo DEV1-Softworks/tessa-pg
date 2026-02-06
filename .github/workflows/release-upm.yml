@@ -1,0 +1,47 @@
+name: Release UPM Package
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          PACKAGE_DIR="Packages/games.wethefreaks.tessa"
+          PACKAGE_NAME=$(node -p "require('./' + process.env.PACKAGE_DIR + '/package.json').name")
+          VERSION=$(node -p "require('./' + process.env.PACKAGE_DIR + '/package.json').version")
+          TAG_NAME=${GITHUB_REF_NAME}
+          echo "package_dir=${PACKAGE_DIR}" >> "$GITHUB_OUTPUT"
+          echo "package_name=${PACKAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+        env:
+          PACKAGE_DIR: Packages/games.wethefreaks.tessa
+
+      - name: Create UPM zip
+        run: |
+          ARCHIVE_NAME="${{ steps.vars.outputs.package_name }}-${{ steps.vars.outputs.tag }}.zip"
+          cd "${{ steps.vars.outputs.package_dir }}"
+          zip -r "../../${ARCHIVE_NAME}" .
+          echo "archive=${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
+        id: archive
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "${{ steps.archive.outputs.archive }}"
+          name: "${{ steps.vars.outputs.package_name }} ${{ steps.vars.outputs.tag }}"
+          tag_name: "${{ steps.vars.outputs.tag }}"
+          generate_release_notes: true
