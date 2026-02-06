@@ -11,13 +11,20 @@ public class TessaGenerator : MonoBehaviour
     public string unlockingAbilityId = "DoubleJump";
     public bool regenerateOnPlay = true;
 
-    [Header("Start Room Alignment")]
-    [SerializeField] private bool alignStartRoomToCamera = true;
-    [SerializeField] private Camera startCamera;
-
     private Edge lockedConnectionEdge;
 
-    [SerializeField] private TessaMetroidvaniaTilemapPainter tilemapPainter;
+    [Header("Painter")]
+    [SerializeField] private MonoBehaviour painterBehaviour;
+    private ILevelPainter tilemapPainter;
+
+    private void Awake()
+    {
+        tilemapPainter = painterBehaviour as ILevelPainter;
+        if (tilemapPainter == null)
+        {
+            Debug.LogError("TessaGenerator: PainterBehaviour does not implement ILevelPainter.");
+        }
+    }
 
     private void Start()
     {
@@ -34,15 +41,6 @@ public class TessaGenerator : MonoBehaviour
         {
             Debug.LogError("TessaGenerator: TilemapPainter not assigned.");
             return;
-        }
-
-        if (alignStartRoomToCamera)
-        {
-            Camera cameraToUse = startCamera != null ? startCamera : Camera.main;
-            if (cameraToUse != null)
-            {
-                tilemapPainter.AlignStartRoomToWorldPosition(cameraToUse.transform.position);
-            }
         }
 
         var layout = BuildLayout(useSeed: false, seed: 0);

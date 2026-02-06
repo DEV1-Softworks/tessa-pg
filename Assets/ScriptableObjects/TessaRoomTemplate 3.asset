@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37e9ab47118fc8844824a15479c6345d, type: 3}
+  m_Name: TessaRoomTemplate 3
+  m_EditorClassIdentifier: Games.Wethefreaks.Tessa.Runtime::TessaRoomTemplate
+  templateId: room_03
+  width: 10
+  height: 8
+  allowNorth: 1
+  allowSouth: 1
+  allowEast: 1
+  allowWest: 1
+  rows:
+  - '##########'
+  - '#........#'
+  - '#........#'
+  - '#..^^^^..#'
+  - '#........#'
+  - '#........#'
+  - '#........#'
+  - '##########'

@@ -129,7 +129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 159492133}
   - component: {fileID: 159492132}
-  - component: {fileID: 159492134}
   m_Layer: 6
   m_Name: Grid
   m_TagString: Untagged
@@ -167,71 +166,6 @@ Transform:
   - {fileID: 1135610904}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &159492134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159492131}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7b1490a0e18340f8983c846a74fc40f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Games.Wethefreaks.Tessa.Runtime::TessaTilemapPainter
-  floorTilemap: {fileID: 1135610906}
-  wallTilemap: {fileID: 1301486956}
-  platformTilemap: {fileID: 748704989}
-  floorTile: {fileID: 11400000, guid: 576bb764acdad4fdb9e4c17d4fc58966, type: 2}
-  wallTopTile: {fileID: 11400000, guid: 97e3dd2ebdbe54896a2bac2ac0bb7029, type: 2}
-  wallBottomTile: {fileID: 11400000, guid: ea4539a9342f4458cb1d0ff295653533, type: 2}
-  wallLeftTile: {fileID: 11400000, guid: c2e4f758caee649f3ba6f769eb81130f, type: 2}
-  wallRightTile: {fileID: 11400000, guid: 0ec704b173555446982b7e6cd6a4fdd0, type: 2}
-  wallCornerTopLeftTile: {fileID: 11400000, guid: 4f14786cf20354cea86ad1a6a462b69d, type: 2}
-  wallCornerTopRightTile: {fileID: 11400000, guid: 012bb78a2759249a6ba6d987816961af, type: 2}
-  wallCornerBottomLeftTile: {fileID: 11400000, guid: 37bee2cac4adc40d98c7484d74ae989a, type: 2}
-  wallCornerBottomRightTile: {fileID: 11400000, guid: ea4539a9342f4458cb1d0ff295653533, type: 2}
-  gateTile: {fileID: 11400000, guid: 2428a103ed21f40eca9aa24b845e9696, type: 2}
-  platformTile: {fileID: 11400000, guid: f0a836922abd54f7087069a81874bae5, type: 2}
-  minRoomSizeTiles: {x: 8, y: 8}
-  maxRoomSizeTiles: {x: 32, y: 18}
-  useFixedRoomSize: 1
-  stepTiles: 5
-  cellPaddingTiles: 2
-  layoutOriginTiles: {x: 10, y: 6}
-  corridorThicknessTiles: 2
-  floorSortingOrder: 0
-  platformSortingOrder: 1
-  wallSortingOrder: 2
-  platformChance: 0.7
-  platformLengthTiles: {x: 4, y: 10}
-  platformHorizontalPadding: 2
-  platformVerticalPadding: 2
-  platformAlgorithm: 1
-  tieredMinPlatforms: 2
-  tieredMaxPlatforms: 4
-  tieredMinLength: 4
-  tieredMaxLength: 10
-  tieredTierCount: 3
-  tieredMinVerticalSpacing: 2
-  poissonMinLength: 4
-  poissonMaxLength: 10
-  poissonMinRowSpacing: 2
-  poissonMaxPlatforms: 6
-  poissonMaxAttempts: 24
-  criticalMinPlatformLength: 4
-  criticalMaxPlatformLength: 10
-  criticalMinStepX: 2
-  criticalMaxStepX: 6
-  criticalMaxStepY: 2
-  criticalExtraPlatforms: 1
-  noiseScale: 0.15
-  noiseThreshold: 0.5
-  noiseMinLength: 4
-  noiseMaxLength: 10
-  noiseMaxPlatforms: 4
-  noiseSeed: 12345
-  patternMaxPatternsPerRoom: 1
 --- !u!1 &489309673
 GameObject:
   m_ObjectHideFlags: 0
@@ -74839,6 +74773,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1874881020}
   - component: {fileID: 1874881019}
+  - component: {fileID: 1874881021}
   m_Layer: 0
   m_Name: LevelGenerator
   m_TagString: Untagged
@@ -74862,9 +74797,7 @@ MonoBehaviour:
   optionalBranchCount: 4
   unlockingAbilityId: DoubleJump
   regenerateOnPlay: 1
-  alignStartRoomToCamera: 0
-  startCamera: {fileID: 489309676}
-  tilemapPainter: {fileID: 159492134}
+  painterBehaviour: {fileID: 1946976333}
 --- !u!4 &1874881020
 Transform:
   m_ObjectHideFlags: 0
@@ -74880,6 +74813,127 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1874881021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1874881018}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7b1490a0e18340f8983c846a74fc40f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Games.Wethefreaks.Tessa.Runtime::TessaTilemapPainter
+  floorTilemap: {fileID: 1135610906}
+  wallTilemap: {fileID: 1301486956}
+  platformTilemap: {fileID: 748704989}
+  floorTile: {fileID: 11400000, guid: 576bb764acdad4fdb9e4c17d4fc58966, type: 2}
+  wallTopTile: {fileID: 11400000, guid: 97e3dd2ebdbe54896a2bac2ac0bb7029, type: 2}
+  wallBottomTile: {fileID: 11400000, guid: ea4539a9342f4458cb1d0ff295653533, type: 2}
+  wallLeftTile: {fileID: 11400000, guid: c2e4f758caee649f3ba6f769eb81130f, type: 2}
+  wallRightTile: {fileID: 11400000, guid: 0ec704b173555446982b7e6cd6a4fdd0, type: 2}
+  wallCornerTopLeftTile: {fileID: 11400000, guid: 4f14786cf20354cea86ad1a6a462b69d, type: 2}
+  wallCornerTopRightTile: {fileID: 11400000, guid: 012bb78a2759249a6ba6d987816961af, type: 2}
+  wallCornerBottomLeftTile: {fileID: 11400000, guid: 37bee2cac4adc40d98c7484d74ae989a, type: 2}
+  wallCornerBottomRightTile: {fileID: 11400000, guid: ea4539a9342f4458cb1d0ff295653533, type: 2}
+  gateTile: {fileID: 11400000, guid: 2428a103ed21f40eca9aa24b845e9696, type: 2}
+  platformTile: {fileID: 11400000, guid: f0a836922abd54f7087069a81874bae5, type: 2}
+  minRoomSizeTiles: {x: 8, y: 8}
+  maxRoomSizeTiles: {x: 32, y: 18}
+  useFixedRoomSize: 1
+  stepTiles: 5
+  cellPaddingTiles: 2
+  layoutOriginTiles: {x: 10, y: 6}
+  corridorThicknessTiles: 2
+  floorSortingOrder: 0
+  platformSortingOrder: 1
+  wallSortingOrder: 2
+  platformChance: 0.7
+  platformLengthTiles: {x: 4, y: 10}
+  platformHorizontalPadding: 2
+  platformVerticalPadding: 2
+  platformAlgorithm: 1
+  tieredMinPlatforms: 2
+  tieredMaxPlatforms: 4
+  tieredMinLength: 4
+  tieredMaxLength: 10
+  tieredTierCount: 3
+  tieredMinVerticalSpacing: 2
+  poissonMinLength: 4
+  poissonMaxLength: 10
+  poissonMinRowSpacing: 2
+  poissonMaxPlatforms: 6
+  poissonMaxAttempts: 24
+  criticalMinPlatformLength: 4
+  criticalMaxPlatformLength: 10
+  criticalMinStepX: 2
+  criticalMaxStepX: 6
+  criticalMaxStepY: 2
+  criticalExtraPlatforms: 1
+  noiseScale: 0.15
+  noiseThreshold: 0.5
+  noiseMinLength: 4
+  noiseMaxLength: 10
+  noiseMaxPlatforms: 4
+  noiseSeed: 12345
+  patternMaxPatternsPerRoom: 1
+--- !u!1 &1946976332
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1946976334}
+  - component: {fileID: 1946976333}
+  m_Layer: 0
+  m_Name: AltGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1946976333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1946976332}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2861021c65a36af4fb10be8ec30394dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Games.Wethefreaks.Tessa.Runtime::TessaAlternativePlatformerTilemapPainter
+  floorTilemap: {fileID: 1135610906}
+  wallTilemap: {fileID: 1301486956}
+  hazardTilemap: {fileID: 748704989}
+  floorTile: {fileID: 11400000, guid: 17426a3a1c6cc4cbc8a1914e9296c508, type: 2}
+  wallTile: {fileID: 11400000, guid: 576bb764acdad4fdb9e4c17d4fc58966, type: 2}
+  hazardTile: {fileID: 11400000, guid: 44bb62ddbd5184d34b7cc160879ebcdb, type: 2}
+  chunkWidth: 10
+  chunkHeight: 8
+  templates: []
+  doorWidth: 2
+  gridWidth: 4
+  gridHeight: 4
+--- !u!4 &1946976334
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1946976332}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 23.6941, y: 3.50103, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -74888,3 +74942,4 @@ SceneRoots:
   - {fileID: 1708046641}
   - {fileID: 1874881020}
   - {fileID: 159492133}
+  - {fileID: 1946976334}
