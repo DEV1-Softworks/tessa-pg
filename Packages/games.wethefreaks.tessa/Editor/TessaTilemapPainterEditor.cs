@@ -3,7 +3,7 @@ using UnityEngine;
 
 [CustomEditor(typeof(TessaMetroidvaniaTilemapPainter))]
 [CanEditMultipleObjects]
-public class TessaMetroidvaniaTilemapPainterEditor : Editor
+public class TessaTilemapPainterEditor : Editor
 {
     private SerializedProperty floorTilemap;
     private SerializedProperty wallTilemap;
