@@ -3,6 +3,9 @@ using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using Games.Wethefreaks.Tessa.Runtime.Algorithms.Platformer;
 
+// SOLID note: This MonoBehaviour owns algorithm selection, room painting,
+// corridor carving, and platform generation. A full SOLID split would require
+// additional strategy/factory services and Unity wiring not included here.
 public class TessaMetroidvaniaTilemapPainter : MonoBehaviour, ILevelPainter
 {
     public enum PlatformAlgorithmType

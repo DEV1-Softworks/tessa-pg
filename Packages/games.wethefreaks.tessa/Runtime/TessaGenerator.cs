@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// SOLID note: This MonoBehaviour mixes generation orchestration, layout algorithms,
+// Unity lifecycle concerns, and painter resolution. Fully separating these would
+// require new services, DI, and editor wiring not present in this package.
 public class TessaGenerator : MonoBehaviour
 {
     [Header("Generation (Defaults)")]

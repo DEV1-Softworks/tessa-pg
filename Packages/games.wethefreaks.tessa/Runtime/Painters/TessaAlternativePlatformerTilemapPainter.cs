@@ -3,6 +3,9 @@ using System.Numerics;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+// SOLID note: This MonoBehaviour combines template selection, validation,
+// door carving, and tile painting in one class. Splitting these concerns would
+// require new abstractions and Unity wiring not present in this package.
 public class TessaAlternativePlatformerTilemapPainter : MonoBehaviour, ILevelPainter
 {
     [Header("Tilemap references")]
